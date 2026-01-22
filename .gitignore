@@ -1,2 +1,35 @@
-*__pycahce__*
+# Python
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+football_cv/
+venv/
+env/
+.venv/
+
+# Video files (too large for GitHub)
+input_videos/*.mp4
+input_videos/*.avi
+input_videos/*.mov
+output_videos/*.mp4
+output_videos/*.avi
+
+# Model files (download separately)
+models/*.pt
+
+# Stub/cache files
+stubs/*.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

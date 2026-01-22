@@ -7,17 +7,19 @@ from player_ball_assigner import PlayerBallAssigner
 from camera_movement_estimator import CameraMovementEstimator
 from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
+import argparse
+from minimap import Minimap
 
 
-def main():
+def main(video_path, no_speed=False, output_path='output_videos/output_video.mp4'):
     # Read Video
-    video_frames = read_video('input_videos/08fd33_4.mp4')
+    video_frames = read_video(video_path)
 
     # Initialize Tracker
     tracker = Tracker('models/best.pt')
 
     tracks = tracker.get_object_tracks(video_frames,
-                                       read_from_stub=True,
+                                       read_from_stub=False,
                                        stub_path='stubs/track_stubs.pkl')
     # Get object positions 
     tracker.add_position_to_tracks(tracks)
@@ -25,7 +27,7 @@ def main():
     # camera movement estimator
     camera_movement_estimator = CameraMovementEstimator(video_frames[0])
     camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
-                                                                                read_from_stub=True,
+                                                                                read_from_stub=False,
                                                                                 stub_path='stubs/camera_movement_stub.pkl')
     camera_movement_estimator.add_adjust_positions_to_tracks(tracks,camera_movement_per_frame)
 
@@ -37,9 +39,10 @@ def main():
     # Interpolate Ball Positions
     tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
 
-    # Speed and distance estimator
-    speed_and_distance_estimator = SpeedAndDistance_Estimator()
-    speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
+    if not no_speed:
+        # Speed and distance estimator
+        speed_and_distance_estimator = SpeedAndDistance_Estimator()
+        speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
 
     # Assign Player Teams
     team_assigner = TeamAssigner()
@@ -77,11 +80,21 @@ def main():
     ## Draw Camera movement
     output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames,camera_movement_per_frame)
 
-    ## Draw Speed and Distance
-    speed_and_distance_estimator.draw_speed_and_distance(output_video_frames,tracks)
+    if not no_speed:
+        ## Draw Speed and Distance
+        speed_and_distance_estimator.draw_speed_and_distance(output_video_frames,tracks)
+
+    # Draw Minimap
+    minimap = Minimap()
+    output_video_frames = minimap.draw_minimap_on_frames(output_video_frames, tracks)
 
     # Save video
-    save_video(output_video_frames, 'output_videos/output_video.avi')
+    save_video(output_video_frames, output_path)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Football Analysis")
+    parser.add_argument('video_path', help="Path to the video file")
+    parser.add_argument('--no-speed', action='store_true', help="Disable speed and distance calculation.")
+    parser.add_argument('--output', default='output_videos/output_video.mp4', help="Path to the output video file.")
+    args = parser.parse_args()
+    main(args.video_path, args.no_speed, args.output)
